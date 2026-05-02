@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: EventSphere API - College Events Platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Event operations
+  - name: registrations
+    description: Registration operations
+  - name: users
+    description: User operations
+  - name: media
+    description: Media gallery operations
+  - name: analytics
+    description: Analytics and reporting
+  - name: dashboard
+    description: Dashboard summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,509 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List events with filters
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: dateRange
+          in: query
+          schema:
+            type: string
+            enum: [any, today, this_week, this_month]
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [in_person, online]
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [upcoming, ongoing, completed, waitlist]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 9
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListResponse"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventBody"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/featured:
+    get:
+      operationId: getFeaturedEvents
+      tags: [events]
+      summary: Get featured events for landing page
+      responses:
+        "200":
+          description: Featured events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /events/categories:
+    get:
+      operationId: getEventCategories
+      tags: [events]
+      summary: Get categories with event counts
+      responses:
+        "200":
+          description: Categories summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorySummary"
+
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event details
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          description: Not found
+    put:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventBody"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /events/{eventId}/approve:
+    post:
+      operationId: approveEvent
+      tags: [events]
+      summary: Approve or reject an event (admin)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveEventBody"
+      responses:
+        "200":
+          description: Event approval status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{eventId}/registrations:
+    get:
+      operationId: getEventRegistrations
+      tags: [registrations]
+      summary: Get registrations for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Registrations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Registration"
+
+  /events/{eventId}/register:
+    post:
+      operationId: registerForEvent
+      tags: [registrations]
+      summary: Register for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Registration created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Registration"
+    delete:
+      operationId: cancelRegistration
+      tags: [registrations]
+      summary: Cancel registration for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Cancelled
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users (admin)
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [participant, organizer, admin]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended]
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}/status:
+    put:
+      operationId: updateUserStatus
+      tags: [users]
+      summary: Update user status (admin)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserStatusBody"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: List media gallery items
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: eventId
+          in: query
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 9
+      responses:
+        "200":
+          description: Media list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaListResponse"
+
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      tags: [analytics]
+      summary: Platform analytics overview
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 30d
+      responses:
+        "200":
+          description: Analytics overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsOverview"
+
+  /analytics/trends:
+    get:
+      operationId: getAnalyticsTrends
+      tags: [analytics]
+      summary: Event participation trends
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 14d, 30d]
+            default: 14d
+      responses:
+        "200":
+          description: Trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendDataPoint"
+
+  /analytics/departments:
+    get:
+      operationId: getAnalyticsDepartments
+      tags: [analytics]
+      summary: Department performance analytics
+      responses:
+        "200":
+          description: Department stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DepartmentStat"
+
+  /dashboard/participant:
+    get:
+      operationId: getParticipantDashboard
+      tags: [dashboard]
+      summary: Participant dashboard summary
+      responses:
+        "200":
+          description: Participant dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParticipantDashboard"
+
+  /dashboard/organizer:
+    get:
+      operationId: getOrganizerDashboard
+      tags: [dashboard]
+      summary: Organizer dashboard summary
+      responses:
+        "200":
+          description: Organizer dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizerDashboard"
+
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      summary: Admin dashboard summary
+      responses:
+        "200":
+          description: Admin dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [users]
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpBody"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [users]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [users]
+      summary: Log out
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required: [message]
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +546,555 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        venue:
+          type: string
+        format:
+          type: string
+          enum: [in_person, online]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        capacity:
+          type: integer
+        registeredCount:
+          type: integer
+        status:
+          type: string
+          enum: [draft, pending, approved, rejected, ongoing, completed]
+        isFeatured:
+          type: boolean
+        price:
+          type: number
+        imageUrl:
+          type: string
+        organizerId:
+          type: integer
+        organizerName:
+          type: string
+        organizerDept:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - category
+        - venue
+        - format
+        - startDate
+        - capacity
+        - registeredCount
+        - status
+        - isFeatured
+        - price
+        - organizerId
+        - organizerName
+        - organizerDept
+        - createdAt
+
+    EventDetail:
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          properties:
+            mediaGallery:
+              type: array
+              items:
+                type: string
+            reviews:
+              type: array
+              items:
+                $ref: "#/components/schemas/Review"
+            averageRating:
+              type: number
+            reviewCount:
+              type: integer
+          required: [mediaGallery, reviews, averageRating, reviewCount]
+
+    EventListResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+      required: [events, total, page, totalPages]
+
+    CreateEventBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        department:
+          type: string
+        venue:
+          type: string
+        format:
+          type: string
+          enum: [in_person, online]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        capacity:
+          type: integer
+        price:
+          type: number
+        imageUrl:
+          type: string
+      required: [title, category, venue, format, startDate, capacity]
+
+    ApproveEventBody:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+        reason:
+          type: string
+      required: [action]
+
+    CategorySummary:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        eventCount:
+          type: integer
+        icon:
+          type: string
+      required: [name, slug, eventCount, icon]
+
+    Registration:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        userEmail:
+          type: string
+        ticketType:
+          type: string
+          enum: [general, vip]
+        status:
+          type: string
+          enum: [registered, waitlist, checked_in, cancelled]
+        passCode:
+          type: string
+        registeredAt:
+          type: string
+      required: [id, eventId, eventTitle, userId, userName, userEmail, ticketType, status, registeredAt]
+
+    RegisterBody:
+      type: object
+      properties:
+        ticketType:
+          type: string
+          enum: [general, vip]
+        userId:
+          type: integer
+      required: [ticketType, userId]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [participant, organizer, admin]
+        status:
+          type: string
+          enum: [active, suspended]
+        department:
+          type: string
+        year:
+          type: integer
+        avatarUrl:
+          type: string
+        joinedAt:
+          type: string
+      required: [id, fullName, email, role, status, joinedAt]
+
+    UpdateUserStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, suspended]
+      required: [status]
+
+    SignUpBody:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [participant, organizer]
+      required: [fullName, email, password, role]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+        message:
+          type: string
+      required: [user, token, message]
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        avatarUrl:
+          type: string
+        rating:
+          type: number
+        comment:
+          type: string
+        createdAt:
+          type: string
+      required: [id, userId, userName, rating, comment, createdAt]
+
+    MediaItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+        imageUrl:
+          type: string
+        category:
+          type: string
+        capturedAt:
+          type: string
+      required: [id, eventId, eventTitle, imageUrl, category, capturedAt]
+
+    MediaListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaItem"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+      required: [items, total, page, totalPages]
+
+    AnalyticsOverview:
+      type: object
+      properties:
+        totalRegistrations:
+          type: integer
+        registrationsChange:
+          type: number
+        averageAttendanceRate:
+          type: number
+        attendanceChange:
+          type: number
+        overallFeedbackScore:
+          type: number
+        totalReviews:
+          type: integer
+      required:
+        - totalRegistrations
+        - registrationsChange
+        - averageAttendanceRate
+        - attendanceChange
+        - overallFeedbackScore
+        - totalReviews
+
+    TrendDataPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        registrations:
+          type: integer
+        attendance:
+          type: integer
+      required: [date, registrations, attendance]
+
+    DepartmentStat:
+      type: object
+      properties:
+        name:
+          type: string
+        attendees:
+          type: integer
+        color:
+          type: string
+      required: [name, attendees, color]
+
+    ParticipantDashboard:
+      type: object
+      properties:
+        userName:
+          type: string
+        registeredEventsCount:
+          type: integer
+        upcomingCount:
+          type: integer
+        certificatesEarned:
+          type: integer
+        nextEvent:
+          $ref: "#/components/schemas/Event"
+        mySchedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleItem"
+        savedEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+      required:
+        - userName
+        - registeredEventsCount
+        - upcomingCount
+        - certificatesEarned
+        - mySchedule
+        - savedEvents
+        - notifications
+
+    OrganizerDashboard:
+      type: object
+      properties:
+        organizerName:
+          type: string
+        totalRegistrations:
+          type: integer
+        registrationsChange:
+          type: number
+        activeEventsCount:
+          type: integer
+        averageAttendance:
+          type: number
+        attendanceChange:
+          type: number
+        avgFeedbackRating:
+          type: number
+        activeEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrganizerEventSummary"
+        recentRegistrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Registration"
+        recentFeedback:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+      required:
+        - organizerName
+        - totalRegistrations
+        - registrationsChange
+        - activeEventsCount
+        - averageAttendance
+        - attendanceChange
+        - avgFeedbackRating
+        - activeEvents
+        - recentRegistrations
+        - recentFeedback
+
+    AdminDashboard:
+      type: object
+      properties:
+        totalActiveUsers:
+          type: integer
+        usersChange:
+          type: number
+        totalEventsHosted:
+          type: integer
+        newEventsThisWeek:
+          type: integer
+        pendingApprovals:
+          type: integer
+        systemAlertsCount:
+          type: integer
+        criticalAlerts:
+          type: integer
+        pendingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        recentUsers:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        systemAlerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemAlert"
+        participationTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendDataPoint"
+        weeklyParticipants:
+          type: integer
+      required:
+        - totalActiveUsers
+        - usersChange
+        - totalEventsHosted
+        - newEventsThisWeek
+        - pendingApprovals
+        - systemAlertsCount
+        - criticalAlerts
+        - pendingEvents
+        - recentUsers
+        - systemAlerts
+        - participationTrend
+        - weeklyParticipants
+
+    ScheduleItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+        venue:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        registrationStatus:
+          type: string
+          enum: [registered, waitlist, completed]
+        waitlistPosition:
+          type: integer
+        canReview:
+          type: boolean
+        hasReviewed:
+          type: boolean
+        hasCertificate:
+          type: boolean
+      required: [id, eventId, eventTitle, venue, startDate, registrationStatus]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [registration, waitlist, certificate, reminder, announcement]
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, type, title, message, isRead, createdAt]
+
+    SystemAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [error, warning, info]
+        title:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+      required: [id, type, title, message, createdAt]
+
+    OrganizerEventSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, ongoing, completed]
+        startDate:
+          type: string
+        venue:
+          type: string
+        checkedIn:
+          type: integer
+        totalRegistrations:
+          type: integer
+      required: [id, title, status, startDate, venue, checkedIn, totalRegistrations]
