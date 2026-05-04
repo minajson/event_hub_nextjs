@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { API_URL } from "@/lib/api-service";
 
 interface Event {
   id: number;
@@ -55,7 +56,23 @@ export default function EventCard({ event, showRegister = true }: EventCardProps
     <div className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-shadow" data-testid={`event-card-${event.id}`}>
       <div className="relative h-44 bg-muted">
         {event.imageUrl ? (
-          <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+          <img 
+            src={event.imageUrl.startsWith('http') ? event.imageUrl : `${API_URL}${event.imageUrl}`} 
+            alt={event.title} 
+            className="w-full h-full object-cover" 
+            onError={(e) => {
+              // Fallback to placeholder if image fails to load
+              const img = e.target as HTMLImageElement;
+              img.style.display = 'none';
+              const parent = img.parentElement;
+              if (parent && !parent.querySelector('.image-fallback')) {
+                const fallback = document.createElement('div');
+                fallback.className = 'image-fallback w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center';
+                fallback.innerHTML = `<span class="text-primary/40 text-xs font-medium">${event.category}</span>`;
+                parent.appendChild(fallback);
+              }
+            }}
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
         )}
