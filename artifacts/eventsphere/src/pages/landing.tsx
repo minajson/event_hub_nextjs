@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, ChevronRight, Code2, Music, Trophy, BookOpen, Zap, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import EventCard from "@/components/EventCard";
 import { useGetFeaturedEvents, useGetEventCategories } from "@workspace/api-client-react";
 
-const categoryIcons: Record<string, React.ReactNode> = {
+const categoryIcons: Record<string, ReactNode> = {
   Technical: <Code2 className="w-6 h-6 text-blue-600" />,
   Cultural: <Music className="w-6 h-6 text-pink-600" />,
   Sports: <Trophy className="w-6 h-6 text-green-600" />,
@@ -109,7 +109,7 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-              {(categories.data ?? []).map((cat) => (
+              {(Array.isArray(categories.data) ? categories.data : []).map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/explore?category=${cat.name}`}
@@ -141,7 +141,7 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(featuredEvents.data ?? []).map((event) => (
+              {(Array.isArray(featuredEvents.data) ? featuredEvents.data : []).map((event) => (
                 <EventCard key={event.id} event={event} showRegister={false} />
               ))}
             </div>
