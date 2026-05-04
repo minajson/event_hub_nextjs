@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { initAuth } from "@/lib/api-service";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import ExplorePage from "@/pages/explore";
@@ -22,6 +23,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Initialize API configuration and auth on app startup
+initAuth();
 
 function Router() {
   return (

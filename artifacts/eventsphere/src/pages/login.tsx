@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Globe, Github, Mail, Eye, EyeOff } from "lucide-react";
+import { Globe, Github, Mail, Eye, EyeOff, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLogin } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
+import { DEMO_ACCOUNTS, type DemoAccountKey } from "@/lib/auth-service";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -28,6 +29,24 @@ export default function LoginPage() {
           else setLocation("/dashboard/participant");
         },
         onError: () => setError("Invalid email or password. Please try again."),
+      }
+    );
+  }
+
+  function handleDemoLogin(account: DemoAccountKey) {
+    const credentials = DEMO_ACCOUNTS[account];
+    setForm({ email: credentials.email, password: credentials.password });
+    setError("");
+    login.mutate(
+      { data: credentials },
+      {
+        onSuccess: (data) => {
+          const role = data.user.role;
+          if (role === "admin") setLocation("/dashboard/admin");
+          else if (role === "organizer") setLocation("/dashboard/organizer");
+          else setLocation("/dashboard/participant");
+        },
+        onError: () => setError("Demo login failed. Please try again."),
       }
     );
   }
@@ -115,11 +134,43 @@ export default function LoginPage() {
             <Link href="/signup" className="text-primary font-medium hover:underline" data-testid="link-signup">Sign up</Link>
           </p>
 
-          <div className="mt-6 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-            <p className="font-medium mb-1">Demo accounts:</p>
-            <p>Admin: robert.k@admin.edu / admin123</p>
-            <p>Organizer: s.jenkins@faculty.edu / admin123</p>
-            <p>Student: alex.j@university.edu / admin123</p>
+          <div className="mt-6">
+            <p className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+              <UserCheck className="w-4 h-4" />
+              Quick Demo Access
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleDemoLogin("admin")}
+                className="text-xs"
+                data-testid="demo-admin"
+              >
+                Admin
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleDemoLogin("organizer")}
+                className="text-xs"
+                data-testid="demo-organizer"
+              >
+                Organizer
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleDemoLogin("student")}
+                className="text-xs"
+                data-testid="demo-student"
+              >
+                Student
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Click to auto-fill and login with demo credentials
+            </p>
           </div>
         </div>
       </div>
